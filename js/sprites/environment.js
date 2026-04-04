@@ -430,6 +430,59 @@ const FLAG = {
 };
 
 // Finish line (16x4)
+// Black Labrador Retriever lying down (20x12) - waiting at the goal
+const DOG = {
+    palette: [
+        null,            // 0 = transparent
+        '#1A1A1A',       // 1 = black fur dark/outline
+        '#2D2D2D',       // 2 = black fur
+        '#3A3A3A',       // 3 = fur highlight
+        '#4A4A4A',       // 4 = fur light
+        '#FF8888',       // 5 = tongue pink
+        '#DD6666',       // 6 = tongue dark
+        '#FFE8D0',       // 7 = muzzle/chest light
+        '#884422',       // 8 = eye brown
+        '#FF4444',       // 9 = eye reflection
+        '#222222',       // A = nose
+        '#EECCAA',       // B = belly light
+        '#3D3D3D',       // C = paw pad
+    ],
+    width: 20,
+    height: 12,
+    frames: [
+        // Frame 0: lying on belly, head up, tongue out
+        [
+            '00000112211000000000',
+            '00001288821000000000',
+            '00012877821100000000',
+            '00128AA7255100000000',
+            '01222772221110000000',
+            '12222222221122221100',
+            '12233222222222222210',
+            '01223322BB22223321C0',
+            '00122222BB22222221C0',
+            '001C1222222222221C10',
+            '00001C12222221C10000',
+            '000000111111C0000000',
+        ],
+        // Frame 1: tail wag, slight shift
+        [
+            '00000112211000000000',
+            '00001288821000000000',
+            '00012877821100000000',
+            '00128AA7255100000000',
+            '01222772221110000000',
+            '12222222221122221100',
+            '12233222222222222211',
+            '01223322BB222233210C',
+            '00122222BB22222210C0',
+            '001C1222222222221C00',
+            '00001C12222221C10000',
+            '000000111111C0000000',
+        ],
+    ]
+};
+
 const FINISH_LINE = {
     palette: [
         null,
