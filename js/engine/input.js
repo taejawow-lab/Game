@@ -1,13 +1,15 @@
-// Input Handler
-// Keyboard (arrow keys, A/D) + Touch controls
+// Input Handler - Improved touch responsiveness
+// Better swipe detection, faster response, continuous touch movement
 
 class InputHandler {
     constructor() {
         this.keys = {};
         this.touchLeft = false;
         this.touchRight = false;
-        this.touchStart = null;
-        this.clicks = []; // for menu clicks
+        this.clicks = [];
+        this.activeTouches = {};
+
+        const canvas = document.getElementById('gameCanvas');
 
         // Keyboard
         window.addEventListener('keydown', (e) => {
@@ -20,63 +22,86 @@ class InputHandler {
             this.keys[e.code] = false;
         });
 
-        // Touch
-        const canvas = document.getElementById('gameCanvas');
+        // Touch - improved continuous tracking
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             for (const touch of e.changedTouches) {
                 const rect = canvas.getBoundingClientRect();
-                const x = touch.clientX - rect.left;
-                const y = touch.clientY - rect.top;
-                const canvasX = (x / rect.width) * canvas.width;
-                const canvasY = (y / rect.height) * canvas.height;
+                const canvasX = ((touch.clientX - rect.left) / rect.width) * canvas.width;
+                const canvasY = ((touch.clientY - rect.top) / rect.height) * canvas.height;
+
+                this.activeTouches[touch.identifier] = {
+                    startX: touch.clientX,
+                    startY: touch.clientY,
+                    currentX: touch.clientX,
+                    canvasX: canvasX,
+                    canvasY: canvasY,
+                };
 
                 this.clicks.push({ x: canvasX, y: canvasY });
-
-                // Bottom portion = controls
-                if (canvasY > canvas.height * 0.7) {
-                    if (canvasX < canvas.width / 2) {
-                        this.touchLeft = true;
-                    } else {
-                        this.touchRight = true;
-                    }
-                } else {
-                    // Upper portion touch for left/right movement too
-                    if (canvasX < canvas.width / 2) {
-                        this.touchLeft = true;
-                    } else {
-                        this.touchRight = true;
-                    }
-                }
-                this.touchStart = { x: touch.clientX, y: touch.clientY };
             }
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            this.touchLeft = false;
-            this.touchRight = false;
-            this.touchStart = null;
+            this._updateTouchDirection(canvas);
         }, { passive: false });
 
         canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
-            if (this.touchStart) {
-                for (const touch of e.changedTouches) {
-                    const dx = touch.clientX - this.touchStart.x;
-                    this.touchLeft = dx < -10;
-                    this.touchRight = dx > 10;
+            for (const touch of e.changedTouches) {
+                if (this.activeTouches[touch.identifier]) {
+                    this.activeTouches[touch.identifier].currentX = touch.clientX;
                 }
             }
+            this._updateTouchDirection(canvas);
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            for (const touch of e.changedTouches) {
+                delete this.activeTouches[touch.identifier];
+            }
+            this._updateTouchDirection(canvas);
+        }, { passive: false });
+
+        canvas.addEventListener('touchcancel', (e) => {
+            for (const touch of e.changedTouches) {
+                delete this.activeTouches[touch.identifier];
+            }
+            this._updateTouchDirection(canvas);
         }, { passive: false });
 
         // Mouse click for menu
         canvas.addEventListener('click', (e) => {
             const rect = canvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left) / rect.width * canvas.width;
-            const y = (e.clientY - rect.top) / rect.height * canvas.height;
+            const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
+            const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
             this.clicks.push({ x, y });
         });
+    }
+
+    _updateTouchDirection(canvas) {
+        this.touchLeft = false;
+        this.touchRight = false;
+
+        const rect = canvas.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+
+        for (const id in this.activeTouches) {
+            const t = this.activeTouches[id];
+            // Use swipe offset from start for more responsive feel
+            const dx = t.currentX - t.startX;
+
+            if (dx < -8) {
+                this.touchLeft = true;
+            } else if (dx > 8) {
+                this.touchRight = true;
+            } else {
+                // If no significant swipe, use screen half
+                if (t.currentX < centerX) {
+                    this.touchLeft = true;
+                } else {
+                    this.touchRight = true;
+                }
+            }
+        }
     }
 
     isLeft() {
@@ -85,10 +110,6 @@ class InputHandler {
 
     isRight() {
         return this.keys['ArrowRight'] || this.keys['KeyD'] || this.touchRight;
-    }
-
-    isConfirm() {
-        return this.keys['Enter'] || this.keys['Space'];
     }
 
     consumeConfirm() {
