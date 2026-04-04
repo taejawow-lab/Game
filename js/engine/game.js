@@ -143,7 +143,12 @@ class Game {
         this.gameOverTimer = 0;
         this.clearTimer = 0;
         this.tileOffset = 0;
+        this.stepTimer = 0;
         this.state = GameState.PLAYING;
+
+        // Sound
+        Sound.init();
+        Sound.stageStart();
 
         // Generate tree positions for decoration
         this.trees = [];
@@ -213,8 +218,10 @@ class Game {
             obstacle.variant = Math.floor(Math.random() * this.personVariants.length);
         } else if (selected.type === OBSTACLE_TYPES.BICYCLE) {
             obstacle.variant = Math.floor(Math.random() * this.bicycleVariants.length);
+            Sound.bicycleBell();
         } else if (selected.type === OBSTACLE_TYPES.MOTORCYCLE) {
             obstacle.variant = Math.floor(Math.random() * this.motorcycleVariants.length);
+            Sound.motorPass();
         }
 
         this.obstacles.push(obstacle);
@@ -226,11 +233,16 @@ class Game {
             case GameState.TITLE:
                 this.titleBlink += dt;
                 if (this.input.consumeConfirm()) {
+                    Sound.init();
+                    Sound.select();
                     this.state = GameState.STAGE_SELECT;
                     this.input.clearClicks();
                 }
                 const click = this.input.getClick();
                 if (click) {
+                    if (this.checkSoundToggle(click)) break;
+                    Sound.init();
+                    Sound.select();
                     this.state = GameState.STAGE_SELECT;
                     this.input.clearClicks();
                 }
@@ -297,6 +309,7 @@ class Game {
     updateStageSelect() {
         const click = this.input.getClick();
         if (!click) return;
+        if (this.checkSoundToggle(click)) return;
 
         // Stage grid: 2 columns, 5 rows
         const gridX = 40;
@@ -313,6 +326,7 @@ class Game {
 
             if (Collision.pointInRect(click.x, click.y, cx, cy, cellW, cellH)) {
                 if (this.isStageUnlocked(i)) {
+                    Sound.select();
                     this.startStage(i);
                     return;
                 }
@@ -340,13 +354,16 @@ class Game {
         // Clamp to road
         this.player.x = Math.max(roadLeft, Math.min(roadRight - this.player.width, this.player.x));
 
-        // Walk animation
-        if (true) { // always walking forward
-            this.player.frameTimer += dt;
-            if (this.player.frameTimer > 200) {
-                this.player.frameTimer -= 200;
-                this.player.frame = (this.player.frame + 1) % 3;
-            }
+        // Walk animation + step sound
+        this.player.frameTimer += dt;
+        if (this.player.frameTimer > 200) {
+            this.player.frameTimer -= 200;
+            this.player.frame = (this.player.frame + 1) % 3;
+        }
+        this.stepTimer = (this.stepTimer || 0) + dt;
+        if (this.stepTimer > 400) {
+            this.stepTimer -= 400;
+            Sound.step();
         }
 
         // Scroll
@@ -357,6 +374,7 @@ class Game {
         if (this.distanceTraveled >= stage.levelLength) {
             this.state = GameState.STAGE_CLEAR;
             this.clearTimer = 0;
+            Sound.stageClear();
             if (!this.clearedStages.includes(this.currentStage)) {
                 this.clearedStages.push(this.currentStage);
                 this.saveProgress();
@@ -395,6 +413,7 @@ class Game {
                 if (obs.ballTimer <= 0) {
                     obs.ballTimer = 1500 + Math.random() * 2000;
                     obs.frame = 1; // kick animation
+                    Sound.kick();
                     setTimeout(() => { if (obs) obs.frame = 0; }, 300);
 
                     const ballSize = 8 * this.SCALE;
@@ -429,6 +448,7 @@ class Game {
             if (Collision.check(this.player, obs)) {
                 this.state = GameState.GAME_OVER;
                 this.gameOverTimer = 0;
+                Sound.gameOver();
                 return;
             }
         }
@@ -532,6 +552,9 @@ class Game {
             ctx.fillText('TAP TO START', this.WIDTH / 2, 430);
         }
 
+        // Sound toggle
+        this.renderSoundToggle(ctx);
+
         ctx.textAlign = 'left';
     }
 
@@ -549,6 +572,9 @@ class Game {
         ctx.fillStyle = '#AAAAAA';
         ctx.font = '11px monospace';
         ctx.fillText('스테이지를 선택하세요', this.WIDTH / 2, 60);
+
+        // Sound toggle
+        this.renderSoundToggle(ctx);
 
         // Character
         ctx.drawImage(this.playerFrames[0], this.WIDTH / 2 - 24, 72);
@@ -868,5 +894,45 @@ class Game {
         }
 
         ctx.textAlign = 'left';
+    }
+
+    // Sound toggle button (top-right corner on non-playing screens)
+    renderSoundToggle(ctx) {
+        const bx = this.WIDTH - 35;
+        const by = 8;
+        const bw = 28;
+        const bh = 20;
+
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(bx, by, bw, bh);
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(bx, by, bw, bh);
+
+        ctx.fillStyle = Sound.enabled ? '#44DD44' : '#DD4444';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(Sound.enabled ? 'ON' : 'OFF', bx + bw / 2, by + 14);
+        ctx.textAlign = 'left';
+
+        // Draw speaker icon
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText('\u266A', bx - 2, by + 15);
+        ctx.textAlign = 'left';
+    }
+
+    // Check if sound toggle was clicked
+    checkSoundToggle(click) {
+        if (!click) return false;
+        const bx = this.WIDTH - 35;
+        const by = 8;
+        if (Collision.pointInRect(click.x, click.y, bx, by, 28, 20)) {
+            Sound.init();
+            Sound.toggle();
+            return true;
+        }
+        return false;
     }
 }
