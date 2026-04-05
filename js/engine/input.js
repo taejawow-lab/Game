@@ -11,6 +11,13 @@ class InputHandler {
 
         const canvas = document.getElementById('gameCanvas');
 
+        // Cache canvas rect, invalidate on resize
+        this._cachedRect = canvas.getBoundingClientRect();
+        this._canvas = canvas;
+        window.addEventListener('resize', () => {
+            this._cachedRect = canvas.getBoundingClientRect();
+        });
+
         // Keyboard
         window.addEventListener('keydown', (e) => {
             this.keys[e.code] = true;
@@ -25,8 +32,8 @@ class InputHandler {
         // Touch - improved continuous tracking
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
+            const rect = this._cachedRect;
             for (const touch of e.changedTouches) {
-                const rect = canvas.getBoundingClientRect();
                 const canvasX = ((touch.clientX - rect.left) / rect.width) * canvas.width;
                 const canvasY = ((touch.clientY - rect.top) / rect.height) * canvas.height;
 
@@ -40,7 +47,7 @@ class InputHandler {
 
                 this.clicks.push({ x: canvasX, y: canvasY });
             }
-            this._updateTouchDirection(canvas);
+            this._updateTouchDirection();
         }, { passive: false });
 
         canvas.addEventListener('touchmove', (e) => {
@@ -50,7 +57,7 @@ class InputHandler {
                     this.activeTouches[touch.identifier].currentX = touch.clientX;
                 }
             }
-            this._updateTouchDirection(canvas);
+            this._updateTouchDirection();
         }, { passive: false });
 
         canvas.addEventListener('touchend', (e) => {
@@ -58,30 +65,30 @@ class InputHandler {
             for (const touch of e.changedTouches) {
                 delete this.activeTouches[touch.identifier];
             }
-            this._updateTouchDirection(canvas);
+            this._updateTouchDirection();
         }, { passive: false });
 
         canvas.addEventListener('touchcancel', (e) => {
             for (const touch of e.changedTouches) {
                 delete this.activeTouches[touch.identifier];
             }
-            this._updateTouchDirection(canvas);
+            this._updateTouchDirection();
         }, { passive: false });
 
         // Mouse click for menu
         canvas.addEventListener('click', (e) => {
-            const rect = canvas.getBoundingClientRect();
+            const rect = this._cachedRect;
             const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
             const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
             this.clicks.push({ x, y });
         });
     }
 
-    _updateTouchDirection(canvas) {
+    _updateTouchDirection() {
         this.touchLeft = false;
         this.touchRight = false;
 
-        const rect = canvas.getBoundingClientRect();
+        const rect = this._cachedRect;
         const centerX = rect.left + rect.width / 2;
 
         for (const id in this.activeTouches) {

@@ -42,6 +42,11 @@ class Game {
         this.buildings = [];
         this.errorMsg = null;
 
+        // Reusable temp object for collision checks (avoid per-frame allocations)
+        this._tempCollObj = { x: 0, y: 0, width: 0, height: 0 };
+        // Reusable merged array for sorted obstacle rendering
+        this._mergedObstacles = [];
+
         // Prerender all sprites
         this.SP = this.SCALE;
         this.playerFrames = SpriteRenderer.prerenderSprite(MAIN_CHARACTER, this.SP);
@@ -307,9 +312,10 @@ class Game {
         }
 
         // Update obstacles
+        const now = Date.now();
         for (let i = this.obstacles.length - 1; i >= 0; i--) {
             const obs = this.obstacles[i];
-            const elapsed = Date.now() - obs.spawnTime;
+            const elapsed = now - obs.spawnTime;
             obs.y += (obs.speed + stage.scrollSpeed) * dt / 1000;
             if (obs.type === OBSTACLE_TYPES.PLAYING) { obs.x = obs.startX + Math.sin(elapsed * obs.zigzagFreq) * obs.zigzagAmp; obs.x = Math.max(roadL, Math.min(roadR - obs.width, obs.x)); }
             if (obs.type === OBSTACLE_TYPES.MOTORCYCLE) { obs.x = obs.startX + Math.sin(elapsed * 0.003) * (obs.wobble || 15); obs.x = Math.max(roadL, Math.min(roadR - obs.width, obs.x)); }
@@ -317,11 +323,15 @@ class Game {
                 obs.ballTimer -= dt;
                 if (obs.ballTimer <= 0) {
                     obs.ballTimer = 1500 + Math.random() * 2000;
-                    obs.frame = 1; Sound.kick();
-                    setTimeout(() => { if (obs) obs.frame = 0; }, 300);
+                    obs.frame = 1; obs.kickResetTimer = 300; Sound.kick();
                     const bs = 6 * this.SP;
                     this.soccerBalls.push({ x: obs.x + obs.width / 2 - bs / 2, y: obs.y + obs.height / 2, width: bs, height: bs, vx: (Math.random() - 0.5) * obs.ballSpeed * 2, vy: obs.ballSpeed, frame: 0, frameTimer: 0 });
                 }
+            }
+            // Reset soccer kick frame without setTimeout
+            if (obs.kickResetTimer !== undefined && obs.kickResetTimer > 0) {
+                obs.kickResetTimer -= dt;
+                if (obs.kickResetTimer <= 0) { obs.frame = 0; obs.kickResetTimer = 0; }
             }
             obs.frameTimer += dt;
             if (obs.frameTimer > 250) { obs.frameTimer -= 250; if (obs.type !== OBSTACLE_TYPES.SOCCER) obs.frame = (obs.frame + 1) % 2; }
@@ -337,12 +347,13 @@ class Game {
             if (b.y > this.HEIGHT + 30 || b.x < -30 || b.x > this.WIDTH + 30) { this.soccerBalls.splice(i, 1); continue; }
             if (Collision.check(this.player, b)) { this.state = GameState.GAME_OVER; this.gameOverTimer = 0; Sound.gameOver(); return; }
         }
-        // Check static obstacle collisions
+        // Check static obstacle collisions (reuse temp object to avoid allocations)
+        const tempObj = this._tempCollObj;
         for (const so of this.staticObs) {
             const sy = this.HEIGHT - (so.worldY - this.distanceTraveled);
             if (sy < -100 || sy > this.HEIGHT + 50) continue;
-            const screenObj = { x: so.x, y: sy, width: so.width, height: so.height };
-            if (Collision.check(this.player, screenObj)) { this.state = GameState.GAME_OVER; this.gameOverTimer = 0; Sound.gameOver(); return; }
+            tempObj.x = so.x; tempObj.y = sy; tempObj.width = so.width; tempObj.height = so.height;
+            if (Collision.check(this.player, tempObj)) { this.state = GameState.GAME_OVER; this.gameOverTimer = 0; Sound.gameOver(); return; }
         }
 
         this.input.getClick(); // consume
@@ -536,14 +547,23 @@ class Game {
             ctx.drawImage(this.sidewalkCanvas, roadR, y + tOff);
         }
 
-        // Road
+        // Road (branch-free inner loop per road type)
         const roadType = stage.roadType || 'paved';
-        for (let y = -ts; y < this.HEIGHT + ts; y += ts) {
-            for (let x = roadL; x < roadR; x += ts) {
-                if (roadType === 'dirt') ctx.drawImage(this.dirtCanvas, x, y + tOff);
-                else if (roadType === 'mixed') ctx.drawImage(((y + tOff) % (ts * 4) < ts * 2) ? this.roadCanvas : this.dirtCanvas, x, y + tOff);
-                else ctx.drawImage(this.roadCanvas, x, y + tOff);
+        if (roadType === 'dirt') {
+            for (let y = -ts; y < this.HEIGHT + ts; y += ts)
+                for (let x = roadL; x < roadR; x += ts)
+                    ctx.drawImage(this.dirtCanvas, x, y + tOff);
+        } else if (roadType === 'mixed') {
+            const ts4 = ts * 4, ts2 = ts * 2;
+            for (let y = -ts; y < this.HEIGHT + ts; y += ts) {
+                const tile = ((y + tOff) % ts4 < ts2) ? this.roadCanvas : this.dirtCanvas;
+                for (let x = roadL; x < roadR; x += ts)
+                    ctx.drawImage(tile, x, y + tOff);
             }
+        } else {
+            for (let y = -ts; y < this.HEIGHT + ts; y += ts)
+                for (let x = roadL; x < roadR; x += ts)
+                    ctx.drawImage(this.roadCanvas, x, y + tOff);
         }
 
         // Buildings on sides (drawn AFTER road so they're visible)
@@ -591,8 +611,11 @@ class Game {
         // Draw coins
         for (const c of this.coins) ctx.drawImage(this.coinCanvases[c.frame], c.x, c.y);
 
-        // Draw obstacles sorted by Y
-        const all = [...this.obstacles, ...this.soccerBalls];
+        // Draw obstacles sorted by Y (reuse array to avoid allocations)
+        const all = this._mergedObstacles;
+        all.length = 0;
+        for (let i = 0; i < this.obstacles.length; i++) all.push(this.obstacles[i]);
+        for (let i = 0; i < this.soccerBalls.length; i++) all.push(this.soccerBalls[i]);
         all.sort((a, b) => a.y - b.y);
         for (const e of all) {
             if (e.vx !== undefined) { ctx.drawImage(this.ballFrames[e.frame], e.x, e.y); continue; }
