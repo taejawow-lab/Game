@@ -71,6 +71,9 @@ class Game {
         this.schoolCanvas = SpriteRenderer.prerenderSprite(SCHOOL, this.SP);
         this.fenceCanvas = SpriteRenderer.prerenderSprite(FENCE, this.SP);
 
+        // Static obstacles
+        this.staticObstacleCanvases = STATIC_OBSTACLES.map(s => SpriteRenderer.prerenderSprite(s, this.SP)[0]);
+
         // UI
         this.coinCanvases = SpriteRenderer.prerenderSprite(COIN, this.SP);
         this.heartCanvas = SpriteRenderer.prerenderSprite(HEART, this.SP)[0];
@@ -112,6 +115,8 @@ class Game {
         this.coinSpawnTimer = 0;
         this.stepTimer = 0;
         this.state = GameState.PLAYING;
+        // Generate static road obstacles (carts, rocks, trash, pots)
+        this.staticObs = [];
         // Generate buildings
         this.buildings = [];
         const roadL = (this.WIDTH - this.WIDTH * stage.roadWidth) / 2;
@@ -126,6 +131,17 @@ class Game {
                 x: side === 'left' ? Math.max(0, roadL - 40 + Math.random() * 10) : roadR + 2 + Math.random() * 10,
                 worldY: i * 80 + Math.random() * 40,
             });
+        }
+        // Place static obstacles on road at intervals
+        const numStatic = 5 + Math.floor(stage.levelLength / 600);
+        for (let i = 0; i < numStatic; i++) {
+            const typeIdx = Math.floor(Math.random() * STATIC_OBSTACLES.length);
+            const spr = STATIC_OBSTACLES[typeIdx];
+            const sw = spr.width * this.SP;
+            const sh = spr.height * this.SP;
+            const ox = roadL + Math.random() * (roadR - roadL - sw);
+            const oy = 200 + i * (stage.levelLength / numStatic) + Math.random() * 100;
+            this.staticObs.push({ typeIdx, x: ox, worldY: oy, width: sw, height: sh });
         }
         Sound.init();
         Sound.stageStart();
@@ -249,8 +265,11 @@ class Game {
         this.distanceTraveled += stage.scrollSpeed * dt / 1000;
         this.tileOffset = (this.tileOffset + stage.scrollSpeed * dt / 1000) % (16 * this.SP);
 
-        // Win check
-        if (this.distanceTraveled >= stage.levelLength) {
+        // Win check - player must visually cross the finish line
+        // Flag is at world position levelLength, screen Y = -(levelLength - distanceTraveled) + HEIGHT * 0.3
+        // Player must pass the flag: flagScreenY >= player.y
+        const flagScreenY = -(stage.levelLength - this.distanceTraveled) + this.HEIGHT * 0.3;
+        if (flagScreenY >= this.player.y) {
             this.state = GameState.STAGE_CLEAR;
             this.clearTimer = 0;
             Sound.stageClear();
@@ -263,13 +282,17 @@ class Game {
         this.spawnTimer += dt;
         if (this.spawnTimer >= stage.spawnInterval) { this.spawnTimer -= stage.spawnInterval; this.spawnObstacle(); }
 
-        // Spawn coins
+        // Spawn coins (frequent, in clusters)
         this.coinSpawnTimer += dt;
-        if (this.coinSpawnTimer > 300) {
+        if (this.coinSpawnTimer > 200) {
             this.coinSpawnTimer = 0;
-            if (Math.random() < (stage.coinChance || 0.03)) {
+            if (Math.random() < 0.18) {
                 const cw = 8 * this.SP;
-                this.coins.push({ x: roadL + Math.random() * (roadR - roadL - cw), y: -cw, width: cw, height: cw, frame: 0, frameTimer: 0 });
+                const baseX = roadL + Math.random() * (roadR - roadL - cw * 3);
+                const count = 1 + Math.floor(Math.random() * 3);
+                for (let ci = 0; ci < count; ci++) {
+                    this.coins.push({ x: baseX + ci * (cw + 4), y: -cw - ci * 20, width: cw, height: cw, frame: 0, frameTimer: 0 });
+                }
             }
         }
 
@@ -314,6 +337,14 @@ class Game {
             if (b.y > this.HEIGHT + 30 || b.x < -30 || b.x > this.WIDTH + 30) { this.soccerBalls.splice(i, 1); continue; }
             if (Collision.check(this.player, b)) { this.state = GameState.GAME_OVER; this.gameOverTimer = 0; Sound.gameOver(); return; }
         }
+        // Check static obstacle collisions
+        for (const so of this.staticObs) {
+            const sy = this.HEIGHT - (so.worldY - this.distanceTraveled);
+            if (sy < -100 || sy > this.HEIGHT + 50) continue;
+            const screenObj = { x: so.x, y: sy, width: so.width, height: so.height };
+            if (Collision.check(this.player, screenObj)) { this.state = GameState.GAME_OVER; this.gameOverTimer = 0; Sound.gameOver(); return; }
+        }
+
         this.input.getClick(); // consume
     }
 
@@ -531,22 +562,30 @@ class Game {
                 default: bCanvas = this.treeCanvases[0]; break;
             }
             if (bCanvas) {
-                const bx = b.side === 'left' ? Math.max(0, roadL - bCanvas.width - 2) : roadR + 2;
+                // Position buildings partially off-screen edge, that's OK - gives depth
+                const bx = b.side === 'left' ? roadL - bCanvas.width + 4 : roadR - 4;
                 ctx.drawImage(bCanvas, bx, sy);
             }
         }
 
+        // Static road obstacles (carts, rocks, trash, pots)
+        for (const so of this.staticObs) {
+            const sy = this.HEIGHT - (so.worldY - this.distanceTraveled);
+            if (sy < -100 || sy > this.HEIGHT + 50) continue;
+            ctx.drawImage(this.staticObstacleCanvases[so.typeIdx], so.x, sy);
+        }
+
         // Flag + Dog at end
         const flagDist = stage.levelLength - this.distanceTraveled;
-        if (flagDist < this.HEIGHT * 2) {
+        if (flagDist < this.HEIGHT * 3) {
             const flagY = -flagDist + this.HEIGHT * 0.3;
             for (let x = roadL; x < roadR; x += this.finishCanvas.width)
                 ctx.drawImage(this.finishCanvas, x, flagY);
             const ff = Math.floor(Date.now() / 500) % 2;
-            ctx.drawImage(this.flagCanvases[ff], this.WIDTH / 2 - 12, flagY - 40);
-            // Dog lying next to flag
+            ctx.drawImage(this.flagCanvases[ff], this.WIDTH / 2 - 20, flagY - 50);
+            // Dog sitting next to flag
             const dogF = Math.floor(Date.now() / 700) % 2;
-            ctx.drawImage(this.dogCanvases[dogF], this.WIDTH / 2 + 15, flagY - 20);
+            ctx.drawImage(this.dogCanvases[dogF], this.WIDTH / 2 + 10, flagY - DOG.height * this.SP);
         }
 
         // Draw coins
