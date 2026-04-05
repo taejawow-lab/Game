@@ -12,7 +12,7 @@ const STAGES = [
     { // Stage 1
         name: '1단계', subtitle: '조용한 골목길',
         speedMultiplier: 1.0, scrollSpeed: 55,
-        roadWidth: 0.65, levelLength: 1200,
+        roadWidth: 0.65, levelLength: 3600,
         spawnInterval: 2200, maxObstacles: 3, coinChance: 0.03,
         roadType: 'dirt', // dirt or paved
         buildings: ['house', 'fence', 'tree'],
@@ -23,7 +23,7 @@ const STAGES = [
     { // Stage 2
         name: '2단계', subtitle: '동네 앞길',
         speedMultiplier: 1.1, scrollSpeed: 60,
-        roadWidth: 0.65, levelLength: 1400,
+        roadWidth: 0.65, levelLength: 4200,
         spawnInterval: 1800, maxObstacles: 4, coinChance: 0.035,
         roadType: 'mixed',
         buildings: ['house', 'house', 'fence', 'tree'],
@@ -34,7 +34,7 @@ const STAGES = [
     { // Stage 3
         name: '3단계', subtitle: '놀이터 앞',
         speedMultiplier: 1.2, scrollSpeed: 65,
-        roadWidth: 0.6, levelLength: 1500,
+        roadWidth: 0.6, levelLength: 4500,
         spawnInterval: 1600, maxObstacles: 5, coinChance: 0.04,
         roadType: 'dirt',
         buildings: ['playground', 'tree', 'fence', 'house'],
@@ -46,7 +46,7 @@ const STAGES = [
     { // Stage 4
         name: '4단계', subtitle: '학교 가는 길',
         speedMultiplier: 1.3, scrollSpeed: 70,
-        roadWidth: 0.6, levelLength: 1600,
+        roadWidth: 0.6, levelLength: 4800,
         spawnInterval: 1400, maxObstacles: 6, coinChance: 0.04,
         roadType: 'paved',
         buildings: ['school', 'tree', 'fence', 'house'],
@@ -59,7 +59,7 @@ const STAGES = [
     { // Stage 5
         name: '5단계', subtitle: '자전거 거리',
         speedMultiplier: 1.4, scrollSpeed: 75,
-        roadWidth: 0.58, levelLength: 1700,
+        roadWidth: 0.58, levelLength: 5100,
         spawnInterval: 1300, maxObstacles: 7, coinChance: 0.045,
         roadType: 'paved',
         buildings: ['building', 'house', 'tree', 'fence'],
@@ -73,7 +73,7 @@ const STAGES = [
     { // Stage 6
         name: '6단계', subtitle: '오토바이 골목',
         speedMultiplier: 1.5, scrollSpeed: 80,
-        roadWidth: 0.55, levelLength: 1800,
+        roadWidth: 0.55, levelLength: 5400,
         spawnInterval: 1200, maxObstacles: 8, coinChance: 0.05,
         roadType: 'mixed',
         buildings: ['building', 'building', 'house', 'tree'],
@@ -88,7 +88,7 @@ const STAGES = [
     { // Stage 7
         name: '7단계', subtitle: '혼잡한 시내',
         speedMultiplier: 1.6, scrollSpeed: 85,
-        roadWidth: 0.52, levelLength: 1900,
+        roadWidth: 0.52, levelLength: 5700,
         spawnInterval: 1100, maxObstacles: 9, coinChance: 0.05,
         roadType: 'paved',
         buildings: ['building', 'building', 'school', 'tree'],
@@ -103,7 +103,7 @@ const STAGES = [
     { // Stage 8
         name: '8단계', subtitle: '좁은 골목',
         speedMultiplier: 1.7, scrollSpeed: 90,
-        roadWidth: 0.48, levelLength: 2000,
+        roadWidth: 0.48, levelLength: 6000,
         spawnInterval: 1000, maxObstacles: 10, coinChance: 0.055,
         roadType: 'dirt',
         buildings: ['house', 'house', 'fence', 'fence'],
@@ -118,7 +118,7 @@ const STAGES = [
     { // Stage 9
         name: '9단계', subtitle: '러시아워',
         speedMultiplier: 1.85, scrollSpeed: 95,
-        roadWidth: 0.46, levelLength: 2200,
+        roadWidth: 0.46, levelLength: 6600,
         spawnInterval: 900, maxObstacles: 11, coinChance: 0.06,
         roadType: 'paved',
         buildings: ['building', 'building', 'building', 'tree'],
@@ -133,7 +133,7 @@ const STAGES = [
     { // Stage 10
         name: '10단계', subtitle: '최종 도전!',
         speedMultiplier: 2.0, scrollSpeed: 100,
-        roadWidth: 0.44, levelLength: 2500,
+        roadWidth: 0.44, levelLength: 7500,
         spawnInterval: 800, maxObstacles: 13, coinChance: 0.07,
         roadType: 'mixed',
         buildings: ['building', 'school', 'building', 'playground'],

@@ -100,7 +100,7 @@ class Game {
     startStage(idx) {
         this.currentStage = idx;
         const stage = STAGES[idx];
-        const sw = 14 * this.SP, sh = 20 * this.SP;
+        const sw = MAIN_CHARACTER.width * this.SP, sh = MAIN_CHARACTER.height * this.SP;
         this.player = { x: this.WIDTH / 2 - sw / 2, y: this.HEIGHT * 0.72, width: sw, height: sh, frame: 0, frameTimer: 0, speed: 220 };
         this.obstacles = [];
         this.soccerBalls = [];
@@ -117,13 +117,14 @@ class Game {
         const roadL = (this.WIDTH - this.WIDTH * stage.roadWidth) / 2;
         const roadR = roadL + this.WIDTH * stage.roadWidth;
         const bTypes = stage.buildings || ['tree'];
-        for (let i = 0; i < 40; i++) {
+        const numBuildings = Math.ceil(stage.levelLength / 60);
+        for (let i = 0; i < numBuildings; i++) {
             const side = i % 2 === 0 ? 'left' : 'right';
             const bType = bTypes[Math.floor(Math.random() * bTypes.length)];
             this.buildings.push({
                 type: bType, side,
                 x: side === 'left' ? Math.max(0, roadL - 40 + Math.random() * 10) : roadR + 2 + Math.random() * 10,
-                worldY: i * 120 + Math.random() * 60,
+                worldY: i * 80 + Math.random() * 40,
             });
         }
         Sound.init();
@@ -498,26 +499,6 @@ class Game {
             for (let x = 0; x < this.WIDTH; x += ts)
                 ctx.drawImage(this.grassCanvas, x, y + tOff);
 
-        // Buildings on sides
-        for (const b of this.buildings) {
-            const screenY = (b.worldY - this.distanceTraveled) % (STAGES[this.currentStage].levelLength + 600);
-            const sy = this.HEIGHT - screenY * 0.5;
-            if (sy < -100 || sy > this.HEIGHT + 50) continue;
-            let bCanvas;
-            switch (b.type) {
-                case 'house': bCanvas = this.houseCanvas[0]; break;
-                case 'building': bCanvas = this.buildingCanvas[0]; break;
-                case 'playground': bCanvas = this.playgroundCanvas[0]; break;
-                case 'school': bCanvas = this.schoolCanvas[0]; break;
-                case 'fence': bCanvas = this.fenceCanvas[0]; break;
-                default: bCanvas = this.treeCanvases[0]; break;
-            }
-            if (bCanvas) {
-                const bx = b.side === 'left' ? Math.max(0, roadL - bCanvas.width - 2) : roadR + 2;
-                ctx.drawImage(bCanvas, bx, sy);
-            }
-        }
-
         // Sidewalk
         for (let y = -ts; y < this.HEIGHT + ts; y += ts) {
             ctx.drawImage(this.sidewalkCanvas, roadL - ts, y + tOff);
@@ -531,6 +512,27 @@ class Game {
                 if (roadType === 'dirt') ctx.drawImage(this.dirtCanvas, x, y + tOff);
                 else if (roadType === 'mixed') ctx.drawImage(((y + tOff) % (ts * 4) < ts * 2) ? this.roadCanvas : this.dirtCanvas, x, y + tOff);
                 else ctx.drawImage(this.roadCanvas, x, y + tOff);
+            }
+        }
+
+        // Buildings on sides (drawn AFTER road so they're visible)
+        for (const b of this.buildings) {
+            const wrapLen = stage.levelLength + 600;
+            let relY = ((b.worldY - this.distanceTraveled) % wrapLen + wrapLen) % wrapLen;
+            const sy = this.HEIGHT - relY;
+            if (sy < -100 || sy > this.HEIGHT + 50) continue;
+            let bCanvas;
+            switch (b.type) {
+                case 'house': bCanvas = this.houseCanvas[0]; break;
+                case 'building': bCanvas = this.buildingCanvas[0]; break;
+                case 'playground': bCanvas = this.playgroundCanvas[0]; break;
+                case 'school': bCanvas = this.schoolCanvas[0]; break;
+                case 'fence': bCanvas = this.fenceCanvas[0]; break;
+                default: bCanvas = this.treeCanvases[0]; break;
+            }
+            if (bCanvas) {
+                const bx = b.side === 'left' ? Math.max(0, roadL - bCanvas.width - 2) : roadR + 2;
+                ctx.drawImage(bCanvas, bx, sy);
             }
         }
 
