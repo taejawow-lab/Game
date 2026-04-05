@@ -45,7 +45,7 @@ class Game {
         // Prerender all sprites
         this.SP = this.SCALE;
         this.playerFrames = SpriteRenderer.prerenderSprite(MAIN_CHARACTER, this.SP);
-        this.titleCharFrames = SpriteRenderer.prerenderSprite(MAIN_CHARACTER, 4);
+        this.titleCharFrames = SpriteRenderer.prerenderSprite(MAIN_CHARACTER, 3);
 
         // Person type prerendered frames
         this.personTypeFrames = PERSON_TYPES.map(p => SpriteRenderer.prerenderSprite(p, this.SP));
@@ -398,7 +398,7 @@ class Game {
         ctx.textAlign = 'center';
         ctx.fillText('이름을 입력하세요', this.WIDTH / 2, 60);
         // Character
-        ctx.drawImage(this.titleCharFrames[0], this.WIDTH / 2 - 28, 75);
+        ctx.drawImage(this.titleCharFrames[0], this.WIDTH / 2 - 30, 75);
         // Name display
         ctx.fillStyle = '#FFFFFF';
         ctx.font = 'bold 24px monospace';
@@ -459,7 +459,7 @@ class Game {
         ctx.fillText('위험한 골목길을 건너라!', this.WIDTH / 2, 112);
         // Character
         const cf = Math.floor(this.titleBlink / 250) % 3;
-        ctx.drawImage(this.titleCharFrames[cf], this.WIDTH / 2 - 28, 140);
+        ctx.drawImage(this.titleCharFrames[cf], this.WIDTH / 2 - 30, 140);
         // Dog near character
         const df = Math.floor(this.titleBlink / 600) % 2;
         ctx.drawImage(this.dogCanvases[df], this.WIDTH / 2 + 10, 210);
@@ -488,7 +488,7 @@ class Game {
         ctx.font = '10px monospace';
         ctx.fillText(this.playerName + ' 의 도전!', this.WIDTH / 2, 48);
         // Character
-        ctx.drawImage(this.playerFrames[0], this.WIDTH / 2 - 14, 55);
+        ctx.drawImage(this.playerFrames[0], this.WIDTH / 2 - MAIN_CHARACTER.width, 55);
         this._renderSoundToggle(ctx);
         // Grid
         const gridX = 25, gridY = 100, cellW = 132, cellH = 58, gap = 6;

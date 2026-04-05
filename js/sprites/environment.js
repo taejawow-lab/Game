@@ -529,11 +529,11 @@ const DOG = {
         '#4A4A4A',       // 4 = fur light
         '#FF8888',       // 5 = tongue
         '#DD6666',       // 6 = tongue dark
-        '#FFE8D0',       // 7 = muzzle
-        '#884422',       // 8 = eye
-        '#FFFFFF',       // 9 = eye highlight
-        '#222222',       // A = nose
-        '#DDBB88',       // B = chest tan
+        '#444444',       // 7 = muzzle (dark, slightly lighter than body)
+        '#AA6622',       // 8 = eye bright brown
+        '#FFFFFF',       // 9 = eye white highlight
+        '#111111',       // A = nose black
+        '#3A3A3A',       // B = chest (dark, slight contrast)
         '#CC4444',       // C = collar
         '#AA3333',       // D = collar dark
     ],
