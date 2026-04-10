@@ -67,31 +67,22 @@ class SoundEngine {
         } catch (e) { /* ignore */ }
     }
 
-    // --- BGM: Cheerful chiptune melody ---
-    startBGM() {
+    // --- BGM: Stage-based chiptune melodies ---
+    startBGM(stageIndex) {
         if (!this.enabled || !this.ctx || this.bgmPlaying) return;
         this.bgmPlaying = true;
         this.resume();
 
-        // Simple cheerful melody pattern (notes in Hz)
         const C4=262, D4=294, E4=330, F4=349, G4=392, A4=440, B4=494;
-        const C5=523, D5=587, E5=659, G5=784;
+        const C5=523, D5=587, E5=659, F5=698, G5=784, A5=880;
 
-        const melody = [
-            C5, E5, G5, E5, C5, D5, E5, C5,
-            G4, A4, B4, C5, D5, C5, B4, A4,
-            C5, E5, G5, E5, D5, E5, C5, G4,
-            A4, B4, C5, D5, E5, D5, C5, C5,
-        ];
-        const bass = [
-            C4, C4, G4, G4, F4, F4, C4, C4,
-            E4, E4, G4, G4, A4, A4, G4, G4,
-            C4, C4, G4, G4, F4, F4, C4, C4,
-            A4, A4, G4, G4, C4, C4, C4, C4,
-        ];
+        // Stage group BGM definitions
+        const bgmData = this._getBGMData(stageIndex || 0, C4,D4,E4,F4,G4,A4,B4,C5,D5,E5,F5,G5,A5);
+        const melody = bgmData.melody;
+        const bass = bgmData.bass;
+        const noteDuration = bgmData.noteDuration;
 
         let noteIndex = 0;
-        const noteDuration = 0.18;
 
         const playNext = () => {
             if (!this.bgmPlaying || !this.enabled) return;
@@ -127,6 +118,93 @@ class SoundEngine {
 
         this.bgmInterval = setInterval(playNext, noteDuration * 1000);
         playNext();
+    }
+
+    _getBGMData(stageIndex, C4,D4,E4,F4,G4,A4,B4,C5,D5,E5,F5,G5,A5) {
+        const group = Math.floor(stageIndex / 2);
+        switch (group) {
+            case 0: // Stage 0-1: Relaxed alley walk
+                return {
+                    noteDuration: 0.22,
+                    melody: [
+                        C5, E5, G5, E5, C5, D5, E5, C5,
+                        G4, A4, B4, C5, D5, C5, B4, A4,
+                        C5, E5, G5, E5, D5, E5, C5, G4,
+                        A4, B4, C5, D5, E5, D5, C5, C5,
+                    ],
+                    bass: [
+                        C4, C4, G4, G4, F4, F4, C4, C4,
+                        E4, E4, G4, G4, A4, A4, G4, G4,
+                        C4, C4, G4, G4, F4, F4, C4, C4,
+                        A4, A4, G4, G4, C4, C4, C4, C4,
+                    ],
+                };
+            case 1: // Stage 2-3: Bright playground
+                return {
+                    noteDuration: 0.18,
+                    melody: [
+                        E5, G5, A5, G5, E5, D5, E5, G5,
+                        C5, D5, E5, G5, A5, G5, E5, D5,
+                        G5, E5, D5, C5, D5, E5, G5, A5,
+                        E5, D5, C5, D5, E5, G5, E5, C5,
+                    ],
+                    bass: [
+                        C4, C4, E4, E4, G4, G4, C4, C4,
+                        A4, A4, G4, G4, F4, F4, E4, E4,
+                        C4, C4, E4, E4, G4, G4, A4, A4,
+                        F4, F4, G4, G4, C4, C4, C4, C4,
+                    ],
+                };
+            case 2: // Stage 4-5: Bicycle tension
+                return {
+                    noteDuration: 0.15,
+                    melody: [
+                        E5, E5, G5, A5, G5, E5, D5, C5,
+                        D5, E5, G5, E5, D5, C5, D5, E5,
+                        A5, G5, E5, D5, E5, G5, A5, G5,
+                        C5, D5, E5, D5, C5, B4, C5, C5,
+                    ],
+                    bass: [
+                        A4, A4, E4, E4, F4, F4, G4, G4,
+                        A4, A4, G4, G4, F4, F4, E4, E4,
+                        A4, A4, E4, E4, F4, F4, G4, G4,
+                        C4, C4, G4, G4, A4, A4, A4, A4,
+                    ],
+                };
+            case 3: // Stage 6-7: Busy downtown
+                return {
+                    noteDuration: 0.13,
+                    melody: [
+                        G5, A5, G5, E5, G5, A5, G5, E5,
+                        D5, E5, G5, A5, G5, E5, D5, C5,
+                        E5, G5, A5, G5, E5, D5, E5, G5,
+                        A5, G5, E5, D5, C5, D5, E5, E5,
+                    ],
+                    bass: [
+                        C4, E4, G4, C4, E4, G4, A4, G4,
+                        F4, G4, A4, G4, F4, E4, D4, C4,
+                        C4, E4, G4, C4, E4, G4, A4, G4,
+                        F4, E4, D4, C4, G4, G4, C4, C4,
+                    ],
+                };
+            case 4: // Stage 8-9: Rush hour urgency
+            default:
+                return {
+                    noteDuration: 0.11,
+                    melody: [
+                        A5, G5, E5, G5, A5, G5, E5, D5,
+                        E5, G5, A5, G5, E5, D5, C5, D5,
+                        E5, G5, A5, G5, A5, G5, E5, D5,
+                        C5, D5, E5, D5, C5, B4, A4, A4,
+                    ],
+                    bass: [
+                        A4, A4, E4, E4, A4, A4, G4, G4,
+                        F4, F4, E4, E4, D4, D4, C4, C4,
+                        A4, A4, E4, E4, A4, A4, G4, G4,
+                        F4, F4, E4, E4, A4, A4, A4, A4,
+                    ],
+                };
+        }
     }
 
     stopBGM() {
@@ -176,6 +254,20 @@ class SoundEngine {
     bicycleBell() {
         this.playTone(1200, 0.07, 'sine', 0.06);
         setTimeout(() => this.playTone(1400, 0.09, 'sine', 0.04), 80);
+    }
+
+    bombHit() {
+        if (!this.enabled || !this.ctx) return;
+        this.playSweep(400, 100, 0.2, 'sawtooth', 0.12);
+        setTimeout(() => this.playTone(80, 0.15, 'square', 0.1), 100);
+    }
+
+    starGet() {
+        if (!this.enabled || !this.ctx) return;
+        this.playTone(880, 0.08, 'square', 0.1);
+        setTimeout(() => this.playTone(1100, 0.08, 'square', 0.08), 80);
+        setTimeout(() => this.playTone(1320, 0.1, 'square', 0.08), 160);
+        setTimeout(() => this.playTone(1760, 0.15, 'sine', 0.06), 240);
     }
 
     toggle() {
