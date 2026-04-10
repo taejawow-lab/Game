@@ -690,7 +690,7 @@ class Game {
         ctx.drawImage(this.titleCharFrames[cf], this.WIDTH / 2 - 30, 140);
         // Dog near character
         const df = Math.floor(this.titleBlink / 600) % 2;
-        ctx.drawImage(this.dogCanvases[df], this.WIDTH / 2 + 10, 210);
+        ctx.drawImage(this.dogCanvases[df], this.WIDTH / 2 - 10, 215);
         // Player name
         ctx.fillStyle = '#88CCFF';
         ctx.font = '12px monospace';
@@ -850,7 +850,7 @@ class Game {
             ctx.drawImage(this.flagCanvases[ff], this.WIDTH / 2 - 20, flagY - 50);
             // Dog sitting next to flag
             const dogF = Math.floor(Date.now() / 700) % 2;
-            ctx.drawImage(this.dogCanvases[dogF], this.WIDTH / 2 + 10, flagY - DOG.height * this.SP);
+            ctx.drawImage(this.dogCanvases[dogF], this.WIDTH / 2 - DOG.width, flagY - DOG.height * this.SP + 5);
         }
 
         // Draw coins
