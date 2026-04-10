@@ -1,5 +1,5 @@
 // Character Customization System
-// Hair=5 styles, Shirt=5 colors, Pants=5 colors, Socks=5 colors
+// Hair=5 styles, Body=5 types, Shirt=5 colors, Pants=5 colors, Socks=5 colors
 
 // Hair shapes - only rows 0-16 differ (back view, 20 chars wide)
 const HAIR_STYLES = [
@@ -105,18 +105,78 @@ const HAIR_STYLES = [
     ]},
 ];
 
-// Body rows (fixed, rows 17-22)
-const BODY_ROWS = [
-    '00005666665000000000','00008889988800000000','00058889998850000000',
-    '00568889AA8886500000','00568889AA8886500000','00058888888850000000',
+// Body types - rows 17-22 (torso) + rows 23-24 (pants top)
+// Palette: 5=#FFCC99(skin), 6=#DDAA77(arm), 7=#FFD8A8(highlight)
+//          8=shirt, 9=shirt shadow, A=shirt accent
+//          B=pants, C=pants detail
+const BODY_STYLES = [
+    // 0: 홀쭉 (Skinny) - narrow torso, minimal arms
+    { name: '홀쭉', bodyRows: [
+        '00000566650000000000',  // 17 thin neck (5w)
+        '00005889885000000000',  // 18 (7w)
+        '00005889988500000000',  // 19 (8w)
+        '00005889A98850000000',  // 20 widest (9w)
+        '00005889A98850000000',  // 21
+        '00005888888500000000',  // 22 (8w)
+    ], pantsRows: [
+        '00000BBBBBB000000000',  // 23 (6w)
+        '00000BBCBCB000000000',  // 24
+    ]},
+    // 1: 날씬 (Slim) - slightly narrower than default
+    { name: '날씬', bodyRows: [
+        '00005666650000000000',  // 17 neck (6w)
+        '00008889988800000000',  // 18 (8w)
+        '00058889988500000000',  // 19 (9w)
+        '00056889A98865000000',  // 20 widest (11w)
+        '00056889A98865000000',  // 21
+        '00005888888850000000',  // 22 (9w)
+    ], pantsRows: [
+        '00000BBBBBBB00000000',  // 23 (7w)
+        '00000BBCBCBB00000000',  // 24
+    ]},
+    // 2: 기본 (Normal) - default body
+    { name: '기본', bodyRows: [
+        '00005666665000000000',  // 17 neck (7w)
+        '00008889988800000000',  // 18 (8w)
+        '00058889998850000000',  // 19 (10w)
+        '00568889AA8886500000',  // 20 widest (13w)
+        '00568889AA8886500000',  // 21
+        '00058888888850000000',  // 22 (10w)
+    ], pantsRows: [
+        '00000BBBBBBBB0000000',  // 23 (8w)
+        '00000BBCBCBBB0000000',  // 24
+    ]},
+    // 3: 통통 (Chubby) - wider torso with more arm showing
+    { name: '통통', bodyRows: [
+        '00005666666500000000',  // 17 neck (8w)
+        '00058889988850000000',  // 18 (10w)
+        '00568889988865000000',  // 19 (12w)
+        '05668889AA8886650000',  // 20 widest (15w)
+        '05668889AA8886650000',  // 21
+        '00568888888865000000',  // 22 (12w)
+    ], pantsRows: [
+        '0000BBBBBBBBB0000000',  // 23 (9w)
+        '0000BBBCBCBBB0000000',  // 24
+    ]},
+    // 4: 뚱뚱 (Fat) - very wide torso, prominent arms
+    { name: '뚱뚱', bodyRows: [
+        '00056666666500000000',  // 17 wider neck (9w)
+        '00056889998865000000',  // 18 (11w)
+        '05668889988886500000',  // 19 (14w)
+        '056688889AA888665000',  // 20 widest (17w)
+        '056688889AA888665000',  // 21
+        '05688888888888650000',  // 22 (14w)
+    ], pantsRows: [
+        '0000BBBBBBBBBB000000',  // 23 (10w)
+        '0000BBBCBBCBBB000000',  // 24
+    ]},
 ];
 
-// Leg rows per walk frame (rows 23-27)
-// Row 25 uses E(=14) for socks instead of B(=11)
-const LEG_FRAMES = [
-    ['00000BBBBBBBB0000000','00000BBCBCBBB0000000','00000EEE0EEE00000000','00000DDE0DDE00000000','00000DDF0DDF00000000'],
-    ['00000BBBBBBBB0000000','00000BBCBCBBB0000000','0000EEEE00EEE0000000','0000DDE000DDE0000000','000DDF00000DDF000000'],
-    ['00000BBBBBBBB0000000','00000BBCBCBBB0000000','00000EEE00EEEE000000','00000DDE000DDE000000','000000DDF000DDF00000'],
+// Walk animation rows (rows 25-27) - shared across all body types
+const LEG_WALK_ROWS = [
+    ['00000EEE0EEE00000000','00000DDE0DDE00000000','00000DDF0DDF00000000'],  // frame 0
+    ['0000EEEE00EEE0000000','0000DDE000DDE0000000','000DDF00000DDF000000'],  // frame 1
+    ['00000EEE00EEEE000000','00000DDE000DDE000000','000000DDF000DDF00000'],  // frame 2
 ];
 
 const SHIRT_STYLES = [
@@ -144,14 +204,24 @@ const SOCK_STYLES = [
 ];
 
 // Build character sprite from customization indices
-function buildCharacterSprite(hairIdx, shirtIdx, pantsIdx, sockIdx) {
+function buildCharacterSprite(hairIdx, bodyIdx, shirtIdx, pantsIdx, sockIdx) {
+    // Backwards compatibility: if bodyIdx is missing (old 4-arg calls), shift args
+    if (arguments.length === 4) {
+        sockIdx = pantsIdx; pantsIdx = shirtIdx; shirtIdx = bodyIdx; bodyIdx = 2;
+    }
     const hair = HAIR_STYLES[hairIdx % 5] || HAIR_STYLES[0];
+    const body = BODY_STYLES[bodyIdx % 5] || BODY_STYLES[2];
     const shirt = SHIRT_STYLES[shirtIdx % 5] || SHIRT_STYLES[0];
     const pants = PANTS_STYLES[pantsIdx % 5] || PANTS_STYLES[0];
     const socks = SOCK_STYLES[sockIdx % 5] || SOCK_STYLES[0];
 
-    // Build 3 walk frames
-    const frames = [0,1,2].map(f => [...hair.rows, ...BODY_ROWS, ...LEG_FRAMES[f]]);
+    // Build 3 walk frames: hair(0-16) + body(17-22) + pants(23-24) + walk(25-27)
+    const frames = [0,1,2].map(f => [
+        ...hair.rows,
+        ...body.bodyRows,
+        ...body.pantsRows,
+        ...LEG_WALK_ROWS[f]
+    ]);
 
     // Merge palette overrides
     const palette = [

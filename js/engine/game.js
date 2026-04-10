@@ -118,24 +118,29 @@ class Game {
     saveLeaderboard(stage, board) { try { localStorage.setItem('pixelCrossing_lb_' + stage, JSON.stringify(board)); } catch(e) {} }
     getBestScore(stage) { const lb = this.loadLeaderboard(stage); return lb.length > 0 ? lb[0].score : 0; }
     loadCustomization() {
-        try { const d = localStorage.getItem('pixelCrossing_custom'); return d ? JSON.parse(d) : {hair:0,shirt:0,pants:0,socks:0}; }
-        catch(e) { return {hair:0,shirt:0,pants:0,socks:0}; }
+        try {
+            const d = localStorage.getItem('pixelCrossing_custom');
+            const c = d ? JSON.parse(d) : {hair:0,body:2,shirt:0,pants:0,socks:0};
+            if (c.body === undefined) c.body = 2; // migrate old saves
+            return c;
+        } catch(e) { return {hair:0,body:2,shirt:0,pants:0,socks:0}; }
     }
     saveCustomization() {
         try { localStorage.setItem('pixelCrossing_custom', JSON.stringify(this.customization)); } catch(e) {}
     }
     _rebuildPlayerSprite() {
         const c = this.customization;
-        const sprite = buildCharacterSprite(c.hair, c.shirt, c.pants, c.socks);
+        const sprite = buildCharacterSprite(c.hair, c.body, c.shirt, c.pants, c.socks);
         this.playerFrames = SpriteRenderer.prerenderSprite(sprite, this.SP);
         this.titleCharFrames = SpriteRenderer.prerenderSprite(sprite, 3);
         this.playerMiniFrames = SpriteRenderer.prerenderSprite(sprite, 1);
     }
     _getMiniSprite(look) {
         if (!look) return this.playerMiniFrames;
-        const key = '' + (look.hair||0) + (look.shirt||0) + (look.pants||0) + (look.socks||0);
+        const bdy = look.body !== undefined ? look.body : 2;
+        const key = '' + (look.hair||0) + bdy + (look.shirt||0) + (look.pants||0) + (look.socks||0);
         if (!this._miniSpriteCache[key]) {
-            const sprite = buildCharacterSprite(look.hair||0, look.shirt||0, look.pants||0, look.socks||0);
+            const sprite = buildCharacterSprite(look.hair||0, bdy, look.shirt||0, look.pants||0, look.socks||0);
             this._miniSpriteCache[key] = SpriteRenderer.prerenderSprite(sprite, 1);
         }
         return this._miniSpriteCache[key];
@@ -1437,19 +1442,20 @@ class Game {
         if (!click) return;
         const W = this.WIDTH;
         const c = this.customization;
-        const optY = [175, 218, 261, 304];
+        const optY = [168, 202, 236, 270, 304];
         const optStartX = 70;
         const optGap = 38;
 
-        for (let row = 0; row < 4; row++) {
+        for (let row = 0; row < 5; row++) {
             for (let i = 0; i < 5; i++) {
                 const ox = optStartX + i * optGap;
                 const oy = optY[row];
                 if (Collision.pointInRect(click.x, click.y, ox-14, oy-14, 28, 28)) {
                     Sound.select();
                     if (row === 0) c.hair = i;
-                    else if (row === 1) c.shirt = i;
-                    else if (row === 2) c.pants = i;
+                    else if (row === 1) c.body = i;
+                    else if (row === 2) c.shirt = i;
+                    else if (row === 3) c.pants = i;
                     else c.socks = i;
                     this.saveCustomization();
                     this._rebuildPlayerSprite();
@@ -1459,14 +1465,14 @@ class Game {
         }
 
         // OK button
-        if (Collision.pointInRect(click.x, click.y, W/2-40, 370, 80, 32)) {
+        if (Collision.pointInRect(click.x, click.y, W/2-40, 365, 80, 32)) {
             Sound.select();
             this.state = GameState.TITLE;
             this.titleBlink = 0;
             this.input.clearClicks();
         }
         // Change name button
-        if (Collision.pointInRect(click.x, click.y, W/2-40, 410, 80, 25)) {
+        if (Collision.pointInRect(click.x, click.y, W/2-40, 405, 80, 25)) {
             Sound.select();
             this.nameChars = this.playerName ? this.playerName.split('') : [];
             this.state = GameState.NAME_INPUT;
@@ -1496,39 +1502,40 @@ class Game {
         ctx.drawImage(this.titleCharFrames[pf], previewX, previewY);
 
         const c = this.customization;
-        const labels = ['HAIR', 'SHIRT', 'PANTS', 'SOCKS'];
-        const optY = [175, 218, 261, 304];
+        const labels = ['HAIR', 'BODY', 'SHIRT', 'PANTS', 'SOCKS'];
+        const optY = [168, 202, 236, 270, 304];
         const optStartX = 70;
         const optGap = 38;
 
-        for (let row = 0; row < 4; row++) {
+        for (let row = 0; row < 5; row++) {
             // Label
             ctx.fillStyle = '#AAAAAA';
             ctx.font = '9px monospace';
             ctx.textAlign = 'left';
             ctx.fillText(labels[row], 10, optY[row] + 4);
 
-            const selected = row === 0 ? c.hair : row === 1 ? c.shirt : row === 2 ? c.pants : c.socks;
+            const selected = row === 0 ? c.hair : row === 1 ? c.body : row === 2 ? c.shirt : row === 3 ? c.pants : c.socks;
 
             for (let i = 0; i < 5; i++) {
                 const ox = optStartX + i * optGap;
                 const oy = optY[row];
                 const isSelected = (i === selected);
 
-                if (row === 0) {
-                    // Hair: show style name
+                if (row === 0 || row === 1) {
+                    // Hair & Body: show style name
                     ctx.fillStyle = isSelected ? '#4a3a5a' : '#2a2a3a';
                     ctx.fillRect(ox-14, oy-14, 28, 28);
                     if (isSelected) { ctx.strokeStyle = '#CC88FF'; ctx.lineWidth = 2; ctx.strokeRect(ox-14, oy-14, 28, 28); }
                     ctx.fillStyle = '#AAAAAA';
                     ctx.font = '7px monospace';
                     ctx.textAlign = 'center';
-                    ctx.fillText(HAIR_STYLES[i].name, ox, oy + 10);
+                    const nameList = row === 0 ? HAIR_STYLES : BODY_STYLES;
+                    ctx.fillText(nameList[i].name, ox, oy + 10);
                 } else {
                     // Color swatch
                     let swatchColor;
-                    if (row === 1) swatchColor = getShirtSwatch(i);
-                    else if (row === 2) swatchColor = getPantsSwatch(i);
+                    if (row === 2) swatchColor = getShirtSwatch(i);
+                    else if (row === 3) swatchColor = getPantsSwatch(i);
                     else swatchColor = getSockSwatch(i);
 
                     ctx.fillStyle = isSelected ? '#4a3a5a' : '#2a2a3a';
@@ -1544,20 +1551,20 @@ class Game {
 
         // OK button
         ctx.fillStyle = '#446644';
-        ctx.fillRect(W/2-40, 370, 80, 32);
+        ctx.fillRect(W/2-40, 365, 80, 32);
         ctx.fillStyle = '#FFFFFF';
         ctx.font = 'bold 12px monospace';
-        ctx.fillText('OK', W/2, 390);
+        ctx.fillText('OK', W/2, 385);
 
         // Change name button
         ctx.fillStyle = '#2a2a4a';
-        ctx.fillRect(W/2-40, 410, 80, 25);
+        ctx.fillRect(W/2-40, 405, 80, 25);
         ctx.strokeStyle = '#4466AA';
         ctx.lineWidth = 1;
-        ctx.strokeRect(W/2-40, 410, 80, 25);
+        ctx.strokeRect(W/2-40, 405, 80, 25);
         ctx.fillStyle = '#88AACC';
         ctx.font = '9px monospace';
-        ctx.fillText('\uC774\uB984 \uBCC0\uACBD', W/2, 426);
+        ctx.fillText('\uC774\uB984 \uBCC0\uACBD', W/2, 421);
 
         ctx.textAlign = 'left';
     }
