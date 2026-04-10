@@ -374,9 +374,12 @@ class Game {
         this.spawnTimer += dt;
         if (this.spawnTimer >= stage.spawnInterval) { this.spawnTimer -= stage.spawnInterval; this.spawnObstacle(); }
 
-        // Spawn coins (frequent, in clusters)
+        // Check if near goal - stop spawning items when close to finish line
+        const nearGoal = this.distanceTraveled > stage.levelLength - this.HEIGHT * 1.5;
+
+        // Spawn coins (frequent, in clusters) - not near goal
         this.coinSpawnTimer += dt;
-        if (this.coinSpawnTimer > 200) {
+        if (!nearGoal && this.coinSpawnTimer > 200) {
             this.coinSpawnTimer = 0;
             if (Math.random() < 0.18) {
                 const cw = 8 * this.SP;
@@ -398,15 +401,17 @@ class Game {
             if (Collision.check(this.player, c)) { this.coins.splice(i, 1); this.score += 100; Sound.select(); }
         }
 
-        // Bomb spawn (less frequent than coins)
-        if (Math.random() < 0.008) {
+        // Bomb spawn - scales with stage difficulty, not near goal
+        // Stage 0-1: very rare, Stage 2-3: rare, Stage 4-5: moderate, Stage 6-7: frequent, Stage 8-9: heavy
+        const bombRate = [0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.010][this.currentStage] || 0.005;
+        if (!nearGoal && Math.random() < bombRate) {
             const bw = 8 * this.SP;
             const bx = roadL + Math.random() * (roadR - roadL - bw);
             if (!this.bombs) this.bombs = [];
             this.bombs.push({ x: bx, y: -bw - 10, width: bw, height: bw, frame: 0, frameTimer: 0 });
         }
-        // Big star spawn (rare)
-        if (Math.random() < 0.002) {
+        // Big star spawn (rare) - not near goal
+        if (!nearGoal && Math.random() < 0.002) {
             const sw = 10 * this.SP;
             const sx = roadL + Math.random() * (roadR - roadL - sw);
             if (!this.bigStars) this.bigStars = [];
@@ -442,6 +447,20 @@ class Game {
                     Sound.starGet();
                 }
             }
+        }
+
+        // Remove items past the finish line (clean goal area)
+        if (nearGoal) {
+            const goalScreenY = -(stage.levelLength - this.distanceTraveled) + this.HEIGHT * 0.3;
+            const filterAboveGoal = (arr) => {
+                if (!arr) return;
+                for (let i = arr.length - 1; i >= 0; i--) {
+                    if (arr[i].y < goalScreenY) arr.splice(i, 1);
+                }
+            };
+            filterAboveGoal(this.coins);
+            filterAboveGoal(this.bombs);
+            filterAboveGoal(this.bigStars);
         }
 
         // Update obstacles
@@ -866,6 +885,26 @@ class Game {
         ctx.fillStyle = '#FFDD44';
         ctx.font = 'bold 10px monospace';
         ctx.fillText('' + this.score, 24, 36);
+
+        // Item score guide (top center)
+        const gx = this.WIDTH / 2;
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.fillRect(gx - 62, 3, 124, 14);
+        ctx.font = '7px monospace';
+        ctx.textAlign = 'left';
+        // Coin +100
+        ctx.drawImage(this.coinCanvases[0], gx - 60, 4, 10, 10);
+        ctx.fillStyle = '#FFDD44';
+        ctx.fillText('+100', gx - 48, 13);
+        // Star +1000
+        ctx.drawImage(this.bigStarCanvases[0], gx - 18, 4, 10, 10);
+        ctx.fillStyle = '#44DDFF';
+        ctx.fillText('+1000', gx - 6, 13);
+        // Bomb -500
+        ctx.drawImage(this.bombCanvases[0], gx + 30, 4, 10, 10);
+        ctx.fillStyle = '#FF5544';
+        ctx.fillText('-500', gx + 42, 13);
+
         // Progress bar
         const bx = this.WIDTH - 90, by = 6, bw = 84, bh = 12;
         const prog = Math.min(1, this.distanceTraveled / stage.levelLength);
