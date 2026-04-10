@@ -690,7 +690,7 @@ class Game {
         ctx.drawImage(this.titleCharFrames[cf], this.WIDTH / 2 - 30, 140);
         // Dog near character
         const df = Math.floor(this.titleBlink / 600) % 2;
-        ctx.drawImage(this.dogCanvases[df], this.WIDTH / 2 - 10, 215);
+        ctx.drawImage(this.dogCanvases[df], this.WIDTH / 2 - DOG.width, 210);
         // Player name
         ctx.fillStyle = '#88CCFF';
         ctx.font = '12px monospace';
