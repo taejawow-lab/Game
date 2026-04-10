@@ -319,6 +319,13 @@ class Game {
         const click = this.input.getClick();
         if (!click) return;
         if (this._checkSoundToggle(click)) return;
+        // Back button
+        if (Collision.pointInRect(click.x, click.y, 10, this.HEIGHT - 40, 60, 30)) {
+            Sound.select();
+            this.state = GameState.TITLE;
+            this.input.clearClicks();
+            return;
+        }
         const gridX = 25, gridY = 100, cellW = 132, cellH = 58, gap = 6;
         for (let i = 0; i < 10; i++) {
             const col = i % 2, row = Math.floor(i / 2);
@@ -754,6 +761,17 @@ class Game {
             if (cleared) ctx.drawImage(this.starCanvas, cx + cellW - 20, cy + 4);
             else if (!unlocked) ctx.drawImage(this.lockCanvas, cx + cellW - 20, cy + 4);
         }
+        // Back button
+        const bx = 10, by = this.HEIGHT - 40, bw = 60, bh = 30;
+        ctx.fillStyle = '#3a3a5a';
+        ctx.fillRect(bx, by, bw, bh);
+        ctx.strokeStyle = '#6688AA';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(bx, by, bw, bh);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 12px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('← BACK', bx + bw / 2, by + 20);
         ctx.textAlign = 'left';
     }
 
